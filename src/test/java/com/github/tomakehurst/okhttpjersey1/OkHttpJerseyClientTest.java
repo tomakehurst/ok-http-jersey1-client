@@ -7,7 +7,10 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import javax.ws.rs.core.HttpHeaders;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -26,6 +29,20 @@ public class OkHttpJerseyClientTest {
     @Test
     public void supportsBasicGet() {
         stubFor(get(urlEqualTo("/something")).willReturn(
+                aResponse()
+                        .withStatus(200)
+                        .withHeader(CONTENT_TYPE, "text/plain")
+                        .withBody("Hello world")));
+
+        ClientResponse response = client.resource("http://localhost:8080/something").get(ClientResponse.class);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getEntity(String.class), is("Hello world"));
+    }
+
+    @Test
+    public void supportsRequestHeaders() {
+        stubFor(get(urlEqualTo("/something")).willReturn(
                 aResponse().withStatus(200)
                         .withBody("Hello world")
                         .withHeader("X-Some-Header", "hello-header")));
@@ -34,7 +51,6 @@ public class OkHttpJerseyClientTest {
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getEntity(String.class), is("Hello world"));
-        assertThat(response.getHeaders().getFirst("X-Some-Headers"), is("hello-header"));
     }
 
 }
