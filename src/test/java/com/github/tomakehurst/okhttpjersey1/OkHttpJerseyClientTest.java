@@ -10,6 +10,8 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +20,7 @@ import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.*;
+import static com.sun.jersey.api.client.config.ClientConfig.PROPERTY_CHUNKED_ENCODING_SIZE;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
@@ -50,7 +53,7 @@ public class OkHttpJerseyClientTest {
     }
 
     @Test
-    public void supportsArbitraryResponseHeaders() {
+    public void supportsSingleValuedResponseHeaders() {
         stubGetWillReturn(aResponse().withStatus(200).withHeader("X-Some-Header", "hello-header"));
 
         ClientResponse response = resource().get(ClientResponse.class);
@@ -104,6 +107,27 @@ public class OkHttpJerseyClientTest {
     @Test
     public void supportsPut() {
         testSupportFor(PUT, "Put body");
+    }
+
+    @Test
+    public void sendsContentLengthHeaderOnPost() {
+        stubWillReturn(POST, aResponse().withStatus(200));
+
+        handleWithBody(POST, "TEST");
+
+        verify(postRequestedFor(urlEqualTo("/something")).withHeader("Content-Length", equalTo("4")));
+    }
+
+    @Test
+    public void sendsChunkedBodyOnPostWhenTransferEncodingHeaderPresentAndChunkSizeSet() {
+        stubWillReturn(POST, aResponse().withStatus(200));
+        DefaultClientConfig config = new DefaultClientConfig();
+        config.getProperties().put(PROPERTY_CHUNKED_ENCODING_SIZE, 4);
+        client = new OkHttpJerseyClient(config);
+
+        resource().header("Transfer-Encoding", "chunked").post(ClientResponse.class, "TEST");
+
+        verify(postRequestedFor(urlEqualTo("/something")).withHeader("Transfer-Encoding", equalTo("chunked")));
     }
 
     private void testSupportFor(RequestMethod method) {

@@ -5,6 +5,7 @@ import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.TerminatingClientHandler;
+import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.core.header.InBoundHeaders;
 
 import java.io.IOException;
@@ -33,6 +34,11 @@ public class OkHttpJerseyClientHandler extends TerminatingClientHandler {
         try {
             URL url = cr.getURI().toURL();
             HttpURLConnection connection = client.open(url);
+            Object chunkedEncodingSize = cr.getProperties().get(ClientConfig.PROPERTY_CHUNKED_ENCODING_SIZE);
+            if (chunkedEncodingSize != null) {
+                connection.setChunkedStreamingMode((int) chunkedEncodingSize);
+            }
+
             connection.setRequestMethod(cr.getMethod());
             addRequestHeaders(cr, connection);
             addRequestBodyIfPresent(cr, connection);

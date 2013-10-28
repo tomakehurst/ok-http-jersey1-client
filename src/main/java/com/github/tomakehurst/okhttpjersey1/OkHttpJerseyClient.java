@@ -7,23 +7,16 @@ import com.sun.jersey.core.spi.component.ioc.IoCComponentProviderFactory;
 
 public class OkHttpJerseyClient extends Client {
 
-    private OkHttpJerseyClientHandler handler;
-
     public OkHttpJerseyClient() {
-        this(createDefaultHandler());
+        this(new DefaultClientConfig());
     }
 
-    public OkHttpJerseyClient(OkHttpJerseyClientHandler root) {
-        this(root, new DefaultClientConfig());
+    public OkHttpJerseyClient(ClientConfig config) {
+        this(config, null);
     }
 
-    public OkHttpJerseyClient(OkHttpJerseyClientHandler root, ClientConfig config) {
-        this(root, config, null);
-    }
-
-    public OkHttpJerseyClient(OkHttpJerseyClientHandler root, ClientConfig config, IoCComponentProviderFactory provider) {
-        super(root, config, provider);
-        this.handler = root;
+    public OkHttpJerseyClient(ClientConfig config, IoCComponentProviderFactory provider) {
+        super(createDefaultHandler(), config, provider);
     }
 
     private static OkHttpJerseyClientHandler createDefaultHandler() {
