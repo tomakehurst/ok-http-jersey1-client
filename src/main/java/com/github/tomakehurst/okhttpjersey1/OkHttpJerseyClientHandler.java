@@ -33,9 +33,13 @@ public class OkHttpJerseyClientHandler extends TerminatingClientHandler {
         try {
             URL url = cr.getURI().toURL();
             HttpURLConnection connection = client.open(url);
+            connection.setRequestMethod(cr.getMethod());
+            addRequestHeaders(cr, connection);
+            addRequestBodyIfPresent(cr, connection);
+
             in = connection.getInputStream();
-            return new ClientResponse(connection.getResponseCode(), getInBoundHeaders(connection), in, getMessageBodyWorkers());
-        } catch (Exception ioe) {
+            return new ClientResponse(connection.getResponseCode(), responseHeadersFrom(connection), in, getMessageBodyWorkers());
+        } catch (IOException ioe) {
             if (in != null) {
                 try {
                     in.close();
@@ -47,7 +51,22 @@ public class OkHttpJerseyClientHandler extends TerminatingClientHandler {
         }
     }
 
-    private InBoundHeaders getInBoundHeaders(final HttpURLConnection connection) {
+    private void addRequestBodyIfPresent(ClientRequest cr, HttpURLConnection connection) throws IOException {
+        if (cr.getEntity() != null) {
+            RequestEntityWriter requestEntityWriter = getRequestEntityWriter(cr);
+            requestEntityWriter.writeRequestEntity(connection.getOutputStream());
+        }
+    }
+
+    private void addRequestHeaders(ClientRequest cr, HttpURLConnection connection) {
+        for (Map.Entry<String, List<Object>> header: cr.getHeaders().entrySet()) {
+            for (Object value: header.getValue()) {
+                connection.addRequestProperty(header.getKey(), (String) value);
+            }
+        }
+    }
+
+    private InBoundHeaders responseHeadersFrom(final HttpURLConnection connection) {
         final InBoundHeaders headers = new InBoundHeaders();
 
         for (Map.Entry<String, List<String>> header: connection.getHeaderFields().entrySet()) {
@@ -59,6 +78,7 @@ public class OkHttpJerseyClientHandler extends TerminatingClientHandler {
             list.addAll(header.getValue());
             headers.put(header.getKey(), list);
         }
+
         return headers;
     }
 }
