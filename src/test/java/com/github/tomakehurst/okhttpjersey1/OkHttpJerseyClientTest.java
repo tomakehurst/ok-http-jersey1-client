@@ -11,7 +11,6 @@ import com.squareup.okhttp.OkHttpClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -24,10 +23,10 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
+import static com.github.tomakehurst.okhttpjersey1.JerseyClientBuilder.okHttpBackedJerseyClient;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.*;
-import static com.sun.jersey.api.client.config.ClientConfig.PROPERTY_CHUNKED_ENCODING_SIZE;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
@@ -44,26 +43,9 @@ public class OkHttpJerseyClientTest {
 
     @Before
     public void init() throws Exception {
-        SSLContext sslContext = SslContextFactory.build(getTestKeystoreResource(), "password".toCharArray());
-        OkHttpClient okHttpClient = new OkHttpClient();
-        okHttpClient.setSslSocketFactory(sslContext.getSocketFactory());
-        URLConnectionClientHandler clientHandler =
-                new URLConnectionClientHandler(new OkHttpURLConnectionFactory(okHttpClient));
-        client = new Client(clientHandler);
-//        client = new OkHttpJerseyClient();
-
-    }
-
-    private static String fullPathToTestKeystore() {
-        try {
-            return new File(getTestKeystoreResource().toURI()).getAbsolutePath();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static URL getTestKeystoreResource() {
-        return OkHttpJerseyClient.class.getResource("/test-keystore.jks");
+        client = okHttpBackedJerseyClient()
+                .sslTrustKeystore(getTestKeystoreResource(), "password".toCharArray())
+                .build();
     }
 
     @Test
@@ -150,9 +132,6 @@ public class OkHttpJerseyClientTest {
     @Test
     public void sendsChunkedBodyOnPostWhenTransferEncodingHeaderPresentAndChunkSizeSet() {
         stubWillReturn(POST, aResponse().withStatus(200));
-        DefaultClientConfig config = new DefaultClientConfig();
-        config.getProperties().put(PROPERTY_CHUNKED_ENCODING_SIZE, 4);
-        client = new OkHttpJerseyClient(config);
 
         resource().header("Transfer-Encoding", "chunked").post(ClientResponse.class, "TEST");
 
@@ -166,6 +145,18 @@ public class OkHttpJerseyClientTest {
         ClientResponse response = client.resource("https://localhost:8081/something").get(ClientResponse.class);
 
         assertThat(response.getStatus(), is(200));
+    }
+
+    private static String fullPathToTestKeystore() {
+        try {
+            return new File(getTestKeystoreResource().toURI()).getAbsolutePath();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static URL getTestKeystoreResource() {
+        return OkHttpJerseyClientTest.class.getResource("/test-keystore.jks");
     }
 
     private void testSupportFor(RequestMethod method) {
