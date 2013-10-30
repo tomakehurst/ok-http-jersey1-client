@@ -7,23 +7,20 @@ import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import com.squareup.okhttp.OkHttpClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
-import static com.github.tomakehurst.okhttpjersey1.JerseyClientBuilder.okHttpBackedJerseyClient;
+import static com.github.tomakehurst.okhttpjersey1.OkHttpJerseyClientBuilder.okHttpBackedJerseyClient;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.*;
