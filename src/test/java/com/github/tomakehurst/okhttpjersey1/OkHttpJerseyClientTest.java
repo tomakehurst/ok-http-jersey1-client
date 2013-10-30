@@ -7,35 +7,63 @@ import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.junit.WireMockClassRule;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.squareup.okhttp.OkHttpClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
+import java.io.File;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.http.RequestMethod.*;
 import static com.sun.jersey.api.client.config.ClientConfig.PROPERTY_CHUNKED_ENCODING_SIZE;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class OkHttpJerseyClientTest {
 
     @Rule
-    public WireMockClassRule wm = new WireMockClassRule();
+    public WireMockClassRule wm = new WireMockClassRule(wireMockConfig().httpsPort(8081)
+                                                                        .keystorePath(fullPathToTestKeystore()));
 
     private Client client;
 
     @Before
-    public void init() {
-        client = new OkHttpJerseyClient();
+    public void init() throws Exception {
+        SSLContext sslContext = SslContextFactory.build(getTestKeystoreResource(), "password".toCharArray());
+        OkHttpClient okHttpClient = new OkHttpClient();
+        okHttpClient.setSslSocketFactory(sslContext.getSocketFactory());
+        URLConnectionClientHandler clientHandler =
+                new URLConnectionClientHandler(new OkHttpURLConnectionFactory(okHttpClient));
+        client = new Client(clientHandler);
+//        client = new OkHttpJerseyClient();
+
+    }
+
+    private static String fullPathToTestKeystore() {
+        try {
+            return new File(getTestKeystoreResource().toURI()).getAbsolutePath();
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static URL getTestKeystoreResource() {
+        return OkHttpJerseyClient.class.getResource("/test-keystore.jks");
     }
 
     @Test
@@ -70,6 +98,7 @@ public class OkHttpJerseyClientTest {
         verify(getRequestedFor(urlEqualTo("/something")).withHeader("X-Request-Header", equalTo("request-value")));
     }
 
+    @Ignore("There seems to be a bug in URLConnectionClientHandler resulting in incorrect behaviour in this case")
     @Test
     public void supportsMultiValuedRequestHeaders() {
         stubGetWillReturn(aResponse().withStatus(200));
@@ -128,6 +157,15 @@ public class OkHttpJerseyClientTest {
         resource().header("Transfer-Encoding", "chunked").post(ClientResponse.class, "TEST");
 
         verify(postRequestedFor(urlEqualTo("/something")).withHeader("Transfer-Encoding", equalTo("chunked")));
+    }
+
+    @Test
+    public void supportsHttps() {
+        stubGetWillReturn(aResponse().withStatus(200));
+
+        ClientResponse response = client.resource("https://localhost:8081/something").get(ClientResponse.class);
+
+        assertThat(response.getStatus(), is(200));
     }
 
     private void testSupportFor(RequestMethod method) {
