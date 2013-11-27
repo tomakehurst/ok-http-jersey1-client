@@ -1,13 +1,13 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.tomakehurst</groupId>
-    <artifactId>ok-http-jersey1-client</artifactId>
+    <artifactId>ok-http-jersey1-client-parent</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-    <name>Square OK HTTP Jersey 1.x Client implementation</name>
+    <name>Square OK HTTP Jersey 1.x Client</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,11 +24,6 @@
             <artifactId>okhttp</artifactId>
             <version>1.2.1</version>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>com.google.guava</groupId>-->
-            <!--<artifactId>guava</artifactId>-->
-            <!--<version>15.0</version>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>junit</groupId>
@@ -49,6 +44,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>
             <version>1.36</version>
@@ -56,4 +57,9 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <modules>
+        <module>ok-http-jersey1-client</module>
+    <module>ok-http-metrics-wrapper</module>
+  </modules>
 </project>
